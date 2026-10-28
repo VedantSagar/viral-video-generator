@@ -3,10 +3,14 @@ import fs from "node:fs";
 import path from "node:path";
 import type { VideoJob } from "./types";
 
-const file = path.resolve(process.env.DATABASE_PATH ?? "./data/viral-video-generator.db");
-fs.mkdirSync(path.dirname(file), { recursive: true });
+const isBuild = process.env.NEXT_PHASE === "phase-production-build";
+const file = isBuild ? ":memory:" : path.resolve(process.env.DATABASE_PATH ?? "./data/viral-video-generator.db");
+if (!isBuild) fs.mkdirSync(path.dirname(file), { recursive: true });
 const db = new Database(file);
-db.pragma("journal_mode = WAL");
+if (!isBuild) {
+  db.pragma("busy_timeout = 5000");
+  db.pragma("journal_mode = WAL");
+}
 db.exec(`
   CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY, topic TEXT NOT NULL, format TEXT NOT NULL,

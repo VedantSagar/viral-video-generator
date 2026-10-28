@@ -9,3 +9,5 @@ export const renderInputSchema = z.object({
   projectId: z.string().min(1),
   script: z.string().trim().min(20, "Add more detail to the script before rendering").max(20000)
 });
+
+export type GenerateInput = z.infer<typeof generateInputSchema>;

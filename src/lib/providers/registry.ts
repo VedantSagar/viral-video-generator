@@ -9,7 +9,7 @@ export function getTextProvider(name = process.env.TEXT_PROVIDER ?? "mock"): Tex
     case "omniroute": return new OmniRouteTextProvider();
     case "runway":
     case "luma":
-    case "kling": return new UnsupportedRemoteTextProvider(name);
+    case "kling": return new UnsupportedRemoteTextProvider(name as "runway" | "luma" | "kling");
     default: throw new Error(`Unknown text provider "${name}".`);
   }
 }
