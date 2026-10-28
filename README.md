@@ -18,11 +18,41 @@ npm run dev
 
 Open `http://localhost:3000`. Enter a topic and format, generate a draft, edit it, and queue a local render job. Run `npm test`, `npm run lint`, and `npm run build` for checks.
 
+## Free local/Kaggle MP4 rendering
+
+The dashboard's local job is intentionally safe and retryable: it stores a render plan, while the free FFmpeg command creates the actual MP4. Export the generated script as JSON with this shape:
+
+```json
+{
+  "title": "Example",
+  "scenes": [
+    { "narration": "Your caption text.", "visualPrompt": "optional", "seconds": 5 }
+  ]
+}
+```
+
+Then run:
+
+```bash
+sudo apt-get update && sudo apt-get install -y ffmpeg
+npm run render:local -- ./script.json ./data/rendered-video.mp4
+```
+
+On Kaggle, use `/kaggle/working` because notebook sessions are temporary:
+
+```bash
+apt-get update -y && apt-get install -y ffmpeg
+npm install
+npm run render:local -- ./script.json /kaggle/working/rendered-video.mp4
+```
+
+This creates a 1080x1920 vertical MP4 with timed captions over a generated background. It uses no paid API. Add only assets you created or have permission to use; the next step for richer videos is to replace the visual provider with licensed images/video and add local TTS.
+
 Publishing is disabled by default. A future YouTube adapter will require explicit OAuth and will upload private/draft by default; it will never auto-publish publicly. The app does not bypass YouTube policies, copyright, provider safeguards, or rate limits.
 
 ## Roadmap
 
 1. Add official provider SDK adapters, licensed asset storage, and real TTS.
-2. Execute FFmpeg compositions with timed captions and object storage.
+2. Add visual asset inputs and local TTS to the FFmpeg composition.
 3. Add a durable queue, authentication, per-user quotas, billing, moderation, and observability.
 4. Add explicit YouTube OAuth confirmation, thumbnails, resumable uploads, and private/draft workflows.
