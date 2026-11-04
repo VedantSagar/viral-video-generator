@@ -3,8 +3,12 @@ import { NextResponse } from "next/server";
 import { saveProject } from "@/src/lib/db";
 import { getTextProvider } from "@/src/lib/providers/registry";
 import { generateInputSchema } from "@/src/lib/validation";
+import { requireSession } from "@/src/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  try { requireSession(); } catch (error) { if (error instanceof Response) return error; throw error; }
   try {
     const input = generateInputSchema.parse(await request.json());
     const script = await getTextProvider().generateScript(input);

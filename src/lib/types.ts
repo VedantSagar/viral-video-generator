@@ -1,5 +1,5 @@
 export type VideoFormat = "short" | "story" | "listicle" | "explainer";
-export type ProviderName = "mock" | "omniroute" | "runway" | "luma" | "kling" | "local";
+export type ProviderName = "mock" | "omniroute" | "runway" | "luma" | "kling" | "local" | "kaggle";
 export type JobStatus = "queued" | "running" | "completed" | "failed";
 
 export interface ScriptDraft {
@@ -25,6 +25,7 @@ export interface VideoJob {
   provider: ProviderName;
   progress: number;
   error?: string;
+  outputs?: Array<{ type: "mp4" | "mp3"; url: string; name?: string }>;
   createdAt: string;
   updatedAt: string;
   estimate: UsageEstimate;

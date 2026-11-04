@@ -18,6 +18,26 @@ npm run dev
 
 Open `http://localhost:3000`. Enter a topic and format, generate a draft, edit it, and queue a local render job. Run `npm test`, `npm run lint`, and `npm run build` for checks.
 
+## Admin Kaggle bridge website
+
+The dashboard is protected by `ADMIN_PASSWORD`. The password is read only on the server and is never bundled into the browser. Successful login creates an expiring, signed, HTTP-only session cookie. Set a long random value locally; do not commit `.env`.
+
+Configure the bridge before using **Send to Kaggle**:
+
+```bash
+cp .env.example .env
+npm install
+npm run dev
+```
+
+Required values:
+
+- `ADMIN_PASSWORD`: administrator password.
+- `KAGGLE_BRIDGE_URL`: base URL for the private bridge.
+- `KAGGLE_BRIDGE_TOKEN`: bearer token sent server-side to the bridge.
+
+The app sends `POST /jobs` with `{ projectId, script, captionStyle, outputs }`, where `outputs` contains `mp4` and/or `mp3`. The bridge should return `{ id, status, progress, outputs, estimate }` (it may use `jobId` or `files` instead). Status polling uses `GET /jobs/:id`; output entries are `{ type, url, name }`. The browser never receives the bridge token. YouTube upload is not implemented.
+
 ## Free local/Kaggle MP4 rendering
 
 The dashboard's local job is intentionally safe and retryable: it stores a render plan, while the free FFmpeg command creates the actual MP4. Export the generated script as JSON with this shape:

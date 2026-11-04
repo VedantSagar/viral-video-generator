@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
-import type { VideoJob } from "./types";
+import type { UsageEstimate, VideoJob } from "./types";
 
 const isBuild = process.env.NEXT_PHASE === "phase-production-build";
 const file = isBuild ? ":memory:" : path.resolve(process.env.DATABASE_PATH ?? "./data/viral-video-generator.db");
@@ -10,6 +10,15 @@ const db = new Database(file);
 if (!isBuild) {
   db.pragma("busy_timeout = 5000");
   db.pragma("journal_mode = WAL");
+}
+
+function decodeEstimate(value: string): { estimate: UsageEstimate; outputs: VideoJob["outputs"] } {
+  const stored = JSON.parse(value) as Partial<{ estimate: UsageEstimate; outputs: VideoJob["outputs"] }> & UsageEstimate;
+  if ("estimate" in stored && stored.estimate) return { estimate: stored.estimate, outputs: stored.outputs ?? [] };
+  return {
+    estimate: { currency: stored.currency, estimatedCost: stored.estimatedCost, provider: stored.provider, note: stored.note },
+    outputs: []
+  };
 }
 db.exec(`
   CREATE TABLE IF NOT EXISTS projects (
@@ -35,7 +44,7 @@ export function saveProject(project: { id: string; topic: string; format: string
 export function saveJob(job: VideoJob) {
   db.prepare("INSERT OR REPLACE INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
     job.id, job.projectId, job.status, job.provider, job.progress, job.error ?? null,
-    JSON.stringify(job.estimate), job.createdAt, job.updatedAt
+    JSON.stringify({ estimate: job.estimate, outputs: job.outputs ?? [] }), job.createdAt, job.updatedAt
   );
 }
 
@@ -43,8 +52,19 @@ export function listJobs(): VideoJob[] {
   return (db.prepare("SELECT * FROM jobs ORDER BY created_at DESC LIMIT 20").all() as Array<Record<string, unknown>>).map((row) => ({
     id: row.id as string, projectId: row.project_id as string, status: row.status as VideoJob["status"],
     provider: row.provider as VideoJob["provider"], progress: row.progress as number, error: (row.error as string | null) ?? undefined,
-    estimate: JSON.parse(row.estimate_json as string), createdAt: row.created_at as string, updatedAt: row.updated_at as string
+    ...decodeEstimate(row.estimate_json as string), createdAt: row.created_at as string, updatedAt: row.updated_at as string
   }));
+}
+
+export function getJob(id: string): VideoJob | undefined {
+  const row = db.prepare("SELECT * FROM jobs WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+  if (!row) return undefined;
+  return {
+    id: row.id as string, projectId: row.project_id as string, status: row.status as VideoJob["status"],
+    provider: row.provider as VideoJob["provider"], progress: row.progress as number, error: (row.error as string | null) ?? undefined,
+    ...decodeEstimate(row.estimate_json as string),
+    createdAt: row.created_at as string, updatedAt: row.updated_at as string
+  };
 }
 
 export function saveSetting(key: string, value: string) {
